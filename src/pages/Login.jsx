@@ -1,46 +1,72 @@
-import React, { useState } from "react";
-import { auth, signInWithEmailAndPassword } from "../firebase";
+import React, { useState, useEffect } from "react";
+import { auth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "../firebase";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  async function submit(e) {
+  // Watch authentication state (auto-updates if user is logged in/out)
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Handle login button
+  async function handleLogin(e) {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      setMsg("Login successful!");
-      navigate("/admin");
-    } catch (e) {
-      setMsg("❌ " + e.message);
+      setMsg("✅ Logged in successfully!");
+      setEmail("");
+      setPassword("");
+      navigate("/admin"); // go to admin after login
+    } catch (err) {
+      setMsg("❌ " + err.message);
     }
   }
 
+  // Handle logout button
+  async function handleLogout() {
+    await signOut(auth);
+    setMsg("👋 Logged out");
+  }
+
   return (
-    <div>
-      <h2> Login</h2>
-      <form onSubmit={submit}>
+    <div style={{ maxWidth: 400, margin: "0 auto" }}>
+      <h2>🔐 Login</h2>
+      {user ? (
         <div>
-          <input
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="Email"
-          />
+          <p>Welcome, <b>{user.email}</b></p>
+          <button onClick={handleLogout}>Logout</button>
         </div>
-        <div>
+      ) : (
+        <form onSubmit={handleLogin}>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ display: "block", margin: "10px 0", width: "100%", padding: "8px" }}
+          />
           <input
             type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
             placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ display: "block", margin: "10px 0", width: "100%", padding: "8px" }}
           />
-        </div>
-        <button type="submit">Login</button>
-      </form>
-      <p>{msg}</p>
+          <button type="submit">Login</button>
+        </form>
+      )}
+      <p style={{ marginTop: "10px", color: "green" }}>{msg}</p>
     </div>
   );
 }
