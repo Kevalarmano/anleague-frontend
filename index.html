@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -9,5 +10,14 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+  // Redirect all unknown routes to index.html for React Router
+  (function() {
+    if (!location.pathname.startsWith("/_") && !location.pathname.includes(".")) {
+      history.replaceState(null, "", "/");
+    }
+  })();
+</script>
+
   </body>
 </html>

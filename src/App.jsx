@@ -6,16 +6,23 @@ import Admin from "./pages/Admin.jsx";
 import Login from "./pages/Login.jsx";
 import RegisterTeam from "./pages/RegisterTeam.jsx";
 import { GiSoccerKick } from "react-icons/gi";
-import { FaUserShield } from "react-icons/fa";
+import { FaMoon, FaSun } from "react-icons/fa";
+import clsx from "classnames";
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [theme, setTheme] = useState("dark");
   const navigate = useNavigate();
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub();
   }, []);
+
+  // theme handling
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   const isAdmin = user && user.email === "admin@example.com";
 
@@ -25,53 +32,56 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pitch to-green-900 text-white font-sans">
-      {/* ⚽ Navbar */}
-      <header className="bg-gradient-to-r from-green-800 to-green-600 shadow-md p-4 flex justify-between items-center">
+    <div className={clsx("min-h-screen", theme === "dark" ? "bg-panel text-gray-100" : "bg-gray-50 text-gray-900")}>
+      {/* Navbar */}
+      <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 shadow-md bg-gradient-to-r from-green-900 to-green-700 dark:from-panel dark:to-green-900">
         <div className="flex items-center gap-2">
-          <GiSoccerKick className="text-gold text-3xl" />
-          <h1 className="text-2xl font-bold tracking-wide text-gold">
-            African Nations League
-          </h1>
+          <GiSoccerKick className="text-gold text-2xl" />
+          <h1 className="text-xl font-semibold tracking-wide text-gold">African Nations League</h1>
         </div>
         <nav className="flex items-center gap-6">
-          <Link className="hover:text-gold font-medium" to="/">🏆 Bracket</Link>
-          {isAdmin && <Link className="hover:text-gold font-medium" to="/admin">⚙️ Admin</Link>}
-          {user && !isAdmin && <Link className="hover:text-gold font-medium" to="/register">📝 Register</Link>}
+          <Link className="hover:text-gold transition" to="/">Bracket</Link>
+          {isAdmin && <Link className="hover:text-gold transition" to="/admin">Admin</Link>}
+          {user && !isAdmin && <Link className="hover:text-gold transition" to="/register">Register</Link>}
           {user ? (
-            <button onClick={logout} className="bg-gold text-dark font-semibold px-3 py-1 rounded-md hover:scale-105 transition">
-              Logout
-            </button>
+            <button onClick={logout} className="bg-gold text-dark px-3 py-1 rounded-md hover:scale-105 transition">Logout</button>
           ) : (
             <Link className="text-gold hover:underline" to="/login">Login</Link>
           )}
+          {/* Theme toggle */}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="ml-2 p-2 rounded-md hover:bg-green-800 transition"
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? <FaSun className="text-gold" /> : <FaMoon className="text-green-900" />}
+          </button>
         </nav>
       </header>
 
-      {/* ⚙️ Content */}
-      <main className="p-6 max-w-6xl mx-auto">
+      {/* Main Content */}
+      <main className="p-6 max-w-7xl mx-auto transition">
         <Routes>
           <Route path="/" element={<Bracket />} />
-          <Route path="/admin" element={isAdmin ? <Admin /> : <Denied />} />
-          <Route path="/register" element={user ? <RegisterTeam /> : <Denied />} />
+          <Route path="/admin" element={isAdmin ? <Admin /> : <AccessDenied />} />
+          <Route path="/register" element={user ? <RegisterTeam /> : <AccessDenied />} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </main>
 
-      {/* ⚽ Footer */}
-      <footer className="text-center py-4 bg-green-900 text-gray-300 text-sm">
+      {/* Footer */}
+      <footer className="text-center py-6 text-sm border-t border-green-800/50 dark:border-green-700/40 mt-10">
         © 2025 African Nations League Simulation | Built by Keval Armano Ramchander
       </footer>
     </div>
   );
 }
 
-function Denied() {
+function AccessDenied() {
   return (
-    <div className="text-center mt-20">
-      <FaUserShield className="text-6xl text-gold mx-auto mb-4" />
-      <h2 className="text-xl font-bold text-gold">Access Denied</h2>
-      <p className="text-gray-200">You do not have permission to view this page.</p>
+    <div className="flex flex-col items-center justify-center h-64 text-center">
+      <h2 className="text-2xl font-semibold text-gold mb-2">Access Denied</h2>
+      <p className="text-gray-400">You do not have permission to view this page.</p>
     </div>
   );
 }

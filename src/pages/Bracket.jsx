@@ -3,31 +3,66 @@ import { db, collection, getDocs } from "../firebase";
 
 export default function Bracket() {
   const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
-      const snap = await getDocs(collection(db, "quarterFinals"));
-      setMatches(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    }
-    load();
+    loadMatches();
   }, []);
 
-  if (loading) return <p>Loading bracket...</p>;
+  async function loadMatches() {
+    const snap = await getDocs(collection(db, "quarterFinals"));
+    const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    setMatches(data);
+  }
 
   return (
-    <div>
-      <h2>🏁 Road to the Final</h2>
-      {matches.length === 0 && <p>No matches yet.</p>}
-      <div style={{ display: "grid", gap: 10 }}>
-        {matches.map(m => (
-          <div key={m.id} style={{ border: "1px solid #ddd", padding: 10, borderRadius: 10 }}>
-            <b>{m.teamA}</b> {m.scoreA ?? 0} - {m.scoreB ?? 0} <b>{m.teamB}</b>
-            <div style={{ fontSize: 12, color: "#666" }}>{m.stage || "QF"}</div>
+    <div className="min-h-screen bg-gradient-to-b from-pitch to-green-900 py-10 px-4 text-white">
+      <div className="max-w-5xl mx-auto bg-green-800/80 rounded-2xl shadow-xl p-8">
+        <h2 className="text-3xl font-bold text-center text-gold mb-10">
+          Tournament Bracket
+        </h2>
+
+        {matches.length === 0 ? (
+          <p className="text-center text-gray-300">
+            No matches seeded yet. Once the admin seeds the quarter-finals, fixtures will appear here.
+          </p>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-8">
+            {matches.map((m) => (
+              <div
+                key={m.id}
+                className="bg-white text-green-900 rounded-lg p-6 shadow-lg hover:scale-105 transition"
+              >
+                <h3 className="text-xl font-bold mb-3 text-center text-green-800">
+                  Quarter Final
+                </h3>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-semibold">{m.teamA}</span>
+                  <span className="font-bold text-green-700">{m.scoreA}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-semibold">{m.teamB}</span>
+                  <span className="font-bold text-green-700">{m.scoreB}</span>
+                </div>
+                <div className="text-center mt-4 text-sm text-gray-700">
+                  {m.winner ? (
+                    <p className="text-green-800 font-semibold">
+                      Winner: {m.winner}
+                    </p>
+                  ) : (
+                    <p className="text-gray-500 italic">
+                      Awaiting result
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
+
+      <footer className="text-center mt-10 text-gray-300 text-sm">
+        Data updates in real-time as matches are seeded and results recorded.
+      </footer>
     </div>
   );
 }
