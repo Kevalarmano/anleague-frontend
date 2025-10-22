@@ -47,46 +47,69 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pitch to-green-900 py-10 px-4 text-white">
-      <div className="max-w-5xl mx-auto bg-green-800/80 rounded-2xl shadow-xl p-8">
-        <h2 className="text-3xl font-bold text-center text-gold mb-8">
-          Admin Dashboard
-        </h2>
-
-        {/* Tournament Actions */}
-        <div className="flex justify-center mb-10">
-          <button
-            onClick={seedQuarterFinals}
-            className="bg-gold text-dark px-6 py-3 rounded-lg font-semibold hover:scale-105 transition"
-          >
-            Seed Quarter Finals
-          </button>
+    <div className="min-h-screen bg-[#0a0a0a] dark:bg-[#0a0a0a] text-gray-100 py-10 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h2 className="text-4xl font-bold text-gold drop-shadow-md mb-2">
+            Admin Dashboard
+          </h2>
+          <p className="text-gray-400">
+            Manage teams, seed matches, and monitor tournament progress.
+          </p>
         </div>
 
-        {/* Feedback Message */}
-        {msg && (
-          <p className="text-center text-lg font-medium text-gold mb-6">{msg}</p>
-        )}
+        {/* Control Panel */}
+        <div className="backdrop-blur-md bg-white/5 dark:bg-white/5 border border-green-900/50 rounded-2xl shadow-2xl p-6 mb-10 transition-all duration-300 hover:shadow-gold/20">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <button
+              onClick={seedQuarterFinals}
+              className="bg-gold text-dark font-semibold px-6 py-3 rounded-lg hover:scale-105 hover:shadow-lg hover:shadow-gold/40 transition-all"
+            >
+              Seed Quarter Finals
+            </button>
 
-        {/* Teams Overview */}
-        <div className="bg-green-900/80 rounded-lg p-6">
-          <h3 className="text-2xl font-semibold text-gold mb-4 text-center">
+            {msg && (
+              <p className="text-center md:text-left text-gold font-medium">
+                {msg}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Teams Section */}
+        <div className="backdrop-blur-md bg-white/5 dark:bg-white/5 border border-green-900/50 rounded-2xl p-8 shadow-2xl">
+          <h3 className="text-2xl font-semibold text-gold mb-6 text-center">
             Registered Teams ({teams.length})
           </h3>
 
           {loading ? (
-            <p className="text-center text-gray-300">Loading teams...</p>
+            <p className="text-center text-gray-400">Loading teams...</p>
+          ) : teams.length === 0 ? (
+            <p className="text-center text-gray-400">No teams registered yet.</p>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {teams.map((team) => (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {teams.map((team, i) => (
                 <div
                   key={team.id}
-                  className="bg-white text-green-900 rounded-lg p-4 shadow hover:scale-105 transition"
+                  className="bg-white/10 dark:bg-white/10 border border-green-800/40 rounded-xl p-5 shadow hover:scale-[1.03] hover:border-gold/70 hover:shadow-gold/20 transition-all"
                 >
-                  <h4 className="font-bold text-lg">{team.country}</h4>
-                  <p className="text-sm text-gray-700">Manager: {team.manager}</p>
-                  <p className="text-sm text-gray-700">
-                    Team Rating: <span className="font-semibold">{team.rating}</span>
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="text-lg font-bold text-gold">
+                      {team.country}
+                    </h4>
+                    <span className="text-sm text-gray-400">
+                      #{i + 1}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-300">
+                    Manager: <span className="font-medium">{team.manager}</span>
+                  </p>
+                  <p className="text-sm text-gray-300">
+                    Rating:{" "}
+                    <span className="font-semibold text-gold">
+                      {team.rating}
+                    </span>
                   </p>
                 </div>
               ))}
@@ -94,10 +117,10 @@ export default function Admin() {
           )}
         </div>
 
-        {/* Footer Info */}
-        <div className="mt-10 text-center text-sm text-gray-300">
-          Use this panel to manage team seeding and match data. Only admin users have access.
-        </div>
+        {/* Footer */}
+        <p className="text-center text-gray-500 text-sm mt-10">
+          Admins can view, seed, and manage all tournament data in real time.
+        </p>
       </div>
     </div>
   );
