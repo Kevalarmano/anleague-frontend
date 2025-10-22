@@ -7,10 +7,8 @@ export default {
       colors: {
         pitch: "#0B6623",
         gold: "#FFD700",
-        darkBg: "#0d1117",
-        darkCard: "#161b22",
-        lightBg: "#f9fafb",
-        lightCard: "#ffffff",
+        dark: "#0a0a0a",
+        panel: "#111c12",
       },
     },
   },
