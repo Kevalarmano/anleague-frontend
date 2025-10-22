@@ -6,6 +6,7 @@ import Admin from "./pages/Admin.jsx";
 import Login from "./pages/Login.jsx";
 import RegisterTeam from "./pages/RegisterTeam.jsx";
 import Analytics from "./pages/Analytics.jsx";
+import HallOfFame from "./pages/HallOfFame.jsx"; // ✅ NEW IMPORT
 import { GiSoccerKick } from "react-icons/gi";
 import { FaMoon, FaSun } from "react-icons/fa";
 import clsx from "classnames";
@@ -65,6 +66,11 @@ export default function App() {
               Analytics
             </Link>
           )}
+          {isAdmin && (
+            <Link className="hover:text-gold transition" to="/halloffame">
+              Hall of Fame
+            </Link>
+          )}
           {user && !isAdmin && (
             <Link className="hover:text-gold transition" to="/register">
               Register
@@ -114,6 +120,10 @@ export default function App() {
           <Route
             path="/analytics"
             element={isAdmin ? <Analytics /> : <AccessDenied />}
+          />
+          <Route
+            path="/halloffame"
+            element={isAdmin ? <HallOfFame /> : <AccessDenied />}
           />
         </Routes>
       </main>

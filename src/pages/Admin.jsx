@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { db, collection, getDocs, setDoc, doc } from "../firebase";
+import {
+  db,
+  collection,
+  getDocs,
+  setDoc,
+  doc,
+  addDoc,
+  deleteDoc,
+} from "../firebase";
 import { simulateTournament } from "../lib/simulator";
 import goalSound from "../assets/goal.mp3";
 import whistleSound from "../assets/whistle.mp3";
@@ -46,6 +54,12 @@ export default function Admin() {
         teamB: teamB.country,
         scoreA: 0,
         scoreB: 0,
+        possessionA: 0,
+        possessionB: 0,
+        yellowCardsA: 0,
+        yellowCardsB: 0,
+        redCardsA: 0,
+        redCardsB: 0,
         winner: null,
       });
     }
@@ -61,14 +75,30 @@ export default function Admin() {
       }
 
       whistleAudio.play();
-      const winner = await simulateTournament(teams);
+      const result = await simulateTournament(teams);
       goalAudio.play();
+      const winner = result.winner;
+      const runnerUp = result.runnerUp;
+
+      // Save to Hall of Fame
+      await addDoc(collection(db, "hallOfFame"), {
+        champion: winner.country,
+        runnerUp: runnerUp.country,
+        rating: winner.rating,
+        date: new Date().toISOString(),
+      });
+
       setMsg(`${winner.country} are the new Champions!`);
       launchConfetti();
     } catch (err) {
       console.error(err);
       setMsg("Simulation failed: " + err.message);
     }
+  }
+
+  async function handleDelete(id) {
+    await deleteDoc(doc(db, "teams", id));
+    setTeams((prev) => prev.filter((t) => t.id !== id));
   }
 
   function launchConfetti() {
@@ -90,7 +120,6 @@ export default function Admin() {
         origin: { x: 1 },
         colors: ["#FFD700", "#0B6623", "#FFFFFF"],
       });
-
       if (Date.now() < end) requestAnimationFrame(frame);
     })();
   }
@@ -168,6 +197,21 @@ export default function Admin() {
                       {team.rating}
                     </span>
                   </p>
+
+                  {team.flag && (
+                    <img
+                      src={team.flag}
+                      alt={`${team.country} flag`}
+                      className="w-10 h-6 rounded mt-3 shadow"
+                    />
+                  )}
+
+                  <button
+                    onClick={() => handleDelete(team.id)}
+                    className="mt-4 text-sm text-red-400 hover:text-red-600 transition"
+                  >
+                    Remove Team
+                  </button>
                 </div>
               ))}
             </div>
