@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { db, collection, getDocs, setDoc, doc } from "../firebase";
+import { simulateTournament } from "../lib/simulator";
+import goalSound from "../assets/goal.mp3";
+import whistleSound from "../assets/whistle.mp3";
 
 export default function Admin() {
   const [teams, setTeams] = useState([]);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const goalAudio = new Audio(goalSound);
+  const whistleAudio = new Audio(whistleSound);
 
   useEffect(() => {
     loadTeams();
@@ -46,10 +52,26 @@ export default function Admin() {
     setMsg("Quarter-finals seeded successfully!");
   }
 
+  async function handleSimulate() {
+    try {
+      if (teams.length < 8) {
+        setMsg("You need at least 8 teams to simulate the tournament.");
+        return;
+      }
+
+      whistleAudio.play();
+      const winner = await simulateTournament(teams);
+      goalAudio.play();
+      setMsg(`${winner.country} are the new Champions!`);
+    } catch (err) {
+      console.error(err);
+      setMsg("Simulation failed: " + err.message);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] dark:bg-[#0a0a0a] text-gray-100 py-10 px-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-10">
           <h2 className="text-4xl font-bold text-gold drop-shadow-md mb-2">
             Admin Dashboard
@@ -59,15 +81,23 @@ export default function Admin() {
           </p>
         </div>
 
-        {/* Control Panel */}
         <div className="backdrop-blur-md bg-white/5 dark:bg-white/5 border border-green-900/50 rounded-2xl shadow-2xl p-6 mb-10 transition-all duration-300 hover:shadow-gold/20">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <button
-              onClick={seedQuarterFinals}
-              className="bg-gold text-dark font-semibold px-6 py-3 rounded-lg hover:scale-105 hover:shadow-lg hover:shadow-gold/40 transition-all"
-            >
-              Seed Quarter Finals
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={seedQuarterFinals}
+                className="bg-gold text-dark font-semibold px-6 py-3 rounded-lg hover:scale-105 hover:shadow-lg hover:shadow-gold/40 transition-all"
+              >
+                Seed Quarter Finals
+              </button>
+
+              <button
+                onClick={handleSimulate}
+                className="bg-green-600 text-white font-semibold px-6 py-3 rounded-lg hover:scale-105 hover:shadow-lg hover:shadow-green-400/40 transition-all"
+              >
+                Auto Simulate Tournament
+              </button>
+            </div>
 
             {msg && (
               <p className="text-center md:text-left text-gold font-medium">
@@ -77,7 +107,6 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* Teams Section */}
         <div className="backdrop-blur-md bg-white/5 dark:bg-white/5 border border-green-900/50 rounded-2xl p-8 shadow-2xl">
           <h3 className="text-2xl font-semibold text-gold mb-6 text-center">
             Registered Teams ({teams.length})
@@ -98,9 +127,7 @@ export default function Admin() {
                     <h4 className="text-lg font-bold text-gold">
                       {team.country}
                     </h4>
-                    <span className="text-sm text-gray-400">
-                      #{i + 1}
-                    </span>
+                    <span className="text-sm text-gray-400">#{i + 1}</span>
                   </div>
                   <p className="text-sm text-gray-300">
                     Manager: <span className="font-medium">{team.manager}</span>
@@ -117,7 +144,6 @@ export default function Admin() {
           )}
         </div>
 
-        {/* Footer */}
         <p className="text-center text-gray-500 text-sm mt-10">
           Admins can view, seed, and manage all tournament data in real time.
         </p>
