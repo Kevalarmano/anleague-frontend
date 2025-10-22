@@ -4,51 +4,70 @@ import { db, collection, addDoc } from "../firebase";
 export async function simulateTournament(teams) {
   if (!teams || teams.length < 8) throw new Error("Not enough teams to simulate.");
 
-  // Randomize order
-  const shuffled = [...teams].sort(() => Math.random() - 0.5);
+  // Validate all teams
+  const validTeams = teams.filter(
+    (t) => t && t.country && typeof t.rating === "number"
+  );
+  if (validTeams.length < 8)
+    throw new Error("Invalid or incomplete team data in Firestore");
 
-  // Quarter Finals
+  // Randomize order
+  const shuffled = [...validTeams].sort(() => Math.random() - 0.5);
+
+  // --- Quarter Finals ---
   const qfWinners = [];
   for (let i = 0; i < 8; i += 2) {
     const teamA = shuffled[i];
     const teamB = shuffled[i + 1];
-    const scoreA = rand(0, 5);
-    const scoreB = rand(0, 5);
-    const winner = scoreA >= scoreB ? teamA : teamB;
-    qfWinners.push({ teamA, teamB, scoreA, scoreB, winner });
+    const { winner, scoreA, scoreB } = simulateMatch(teamA, teamB);
+    qfWinners.push({ winner });
     await addMatch("quarterFinals", teamA, teamB, scoreA, scoreB, winner);
   }
 
-  // Semi Finals
+  // --- Semi Finals ---
   const sfWinners = [];
   for (let i = 0; i < 4; i += 2) {
     const teamA = qfWinners[i].winner;
     const teamB = qfWinners[i + 1].winner;
-    const scoreA = rand(0, 5);
-    const scoreB = rand(0, 5);
-    const winner = scoreA >= scoreB ? teamA : teamB;
-    sfWinners.push({ teamA, teamB, scoreA, scoreB, winner });
+    if (!teamA || !teamB)
+      throw new Error("Invalid semi-final match setup (missing team).");
+    const { winner, scoreA, scoreB } = simulateMatch(teamA, teamB);
+    sfWinners.push({ winner });
     await addMatch("semiFinals", teamA, teamB, scoreA, scoreB, winner);
   }
 
-  // Final
+  // --- Final ---
   const teamA = sfWinners[0].winner;
   const teamB = sfWinners[1].winner;
+  if (!teamA || !teamB)
+    throw new Error("Invalid final match setup (missing team).");
+  const { winner, scoreA, scoreB } = simulateMatch(teamA, teamB);
+  const runnerUp = winner === teamA ? teamB : teamA;
+
+  await addMatch("final", teamA, teamB, scoreA, scoreB, winner);
+
+  // --- Store Champion ---
+  await addDoc(collection(db, "pastWinners"), {
+    champion: winner.country,
+    runnerUp: runnerUp.country,
+    rating: winner.rating,
+    year: new Date().getFullYear(),
+    createdAt: new Date(),
+  });
+
+  // ✅ Return structured result
+  return { winner, runnerUp };
+}
+
+function simulateMatch(teamA, teamB) {
   const scoreA = rand(0, 5);
   const scoreB = rand(0, 5);
   const winner = scoreA >= scoreB ? teamA : teamB;
-  await addMatch("final", teamA, teamB, scoreA, scoreB, winner);
-
-  // Store champion
-  await addDoc(collection(db, "pastWinners"), {
-    champion: winner.country,
-    year: new Date().getFullYear(),
-  });
-
-  return winner;
+  return { winner, scoreA, scoreB };
 }
 
 async function addMatch(stage, teamA, teamB, scoreA, scoreB, winner) {
+  if (!teamA || !teamB || !winner) return;
   await addDoc(collection(db, stage), {
     teamA: teamA.country,
     teamB: teamB.country,

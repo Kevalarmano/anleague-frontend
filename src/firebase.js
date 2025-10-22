@@ -8,6 +8,7 @@ import {
   doc,
   setDoc,
   getDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -44,10 +45,11 @@ export {
   doc,
   setDoc,
   getDoc,
+  deleteDoc,
   query,
   where,
-  orderBy,
   onAuthStateChanged,
   signOut,
-  signInWithEmailAndPassword,
+  signInWithEmailAndPassword
 };
+
