@@ -3,6 +3,7 @@ import { db, collection, getDocs, setDoc, doc } from "../firebase";
 import { simulateTournament } from "../lib/simulator";
 import goalSound from "../assets/goal.mp3";
 import whistleSound from "../assets/whistle.mp3";
+import confetti from "canvas-confetti";
 
 export default function Admin() {
   const [teams, setTeams] = useState([]);
@@ -63,15 +64,41 @@ export default function Admin() {
       const winner = await simulateTournament(teams);
       goalAudio.play();
       setMsg(`${winner.country} are the new Champions!`);
+      launchConfetti();
     } catch (err) {
       console.error(err);
       setMsg("Simulation failed: " + err.message);
     }
   }
 
+  function launchConfetti() {
+    const duration = 3000;
+    const end = Date.now() + duration;
+
+    (function frame() {
+      confetti({
+        particleCount: 5,
+        angle: 60,
+        spread: 70,
+        origin: { x: 0 },
+        colors: ["#FFD700", "#0B6623", "#FFFFFF"],
+      });
+      confetti({
+        particleCount: 5,
+        angle: 120,
+        spread: 70,
+        origin: { x: 1 },
+        colors: ["#FFD700", "#0B6623", "#FFFFFF"],
+      });
+
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
+  }
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] dark:bg-[#0a0a0a] text-gray-100 py-10 px-4">
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 py-10 px-4">
       <div className="max-w-6xl mx-auto">
+        {/* Header */}
         <div className="text-center mb-10">
           <h2 className="text-4xl font-bold text-gold drop-shadow-md mb-2">
             Admin Dashboard
@@ -81,7 +108,8 @@ export default function Admin() {
           </p>
         </div>
 
-        <div className="backdrop-blur-md bg-white/5 dark:bg-white/5 border border-green-900/50 rounded-2xl shadow-2xl p-6 mb-10 transition-all duration-300 hover:shadow-gold/20">
+        {/* Control Panel */}
+        <div className="backdrop-blur-md bg-white/5 border border-green-900/50 rounded-2xl shadow-2xl p-6 mb-10 transition-all duration-300 hover:shadow-gold/20">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <button
@@ -107,7 +135,8 @@ export default function Admin() {
           </div>
         </div>
 
-        <div className="backdrop-blur-md bg-white/5 dark:bg-white/5 border border-green-900/50 rounded-2xl p-8 shadow-2xl">
+        {/* Teams Section */}
+        <div className="backdrop-blur-md bg-white/5 border border-green-900/50 rounded-2xl p-8 shadow-2xl">
           <h3 className="text-2xl font-semibold text-gold mb-6 text-center">
             Registered Teams ({teams.length})
           </h3>
@@ -121,7 +150,7 @@ export default function Admin() {
               {teams.map((team, i) => (
                 <div
                   key={team.id}
-                  className="bg-white/10 dark:bg-white/10 border border-green-800/40 rounded-xl p-5 shadow hover:scale-[1.03] hover:border-gold/70 hover:shadow-gold/20 transition-all"
+                  className="bg-white/10 border border-green-800/40 rounded-xl p-5 shadow hover:scale-[1.03] hover:border-gold/70 hover:shadow-gold/20 transition-all"
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="text-lg font-bold text-gold">
@@ -130,7 +159,8 @@ export default function Admin() {
                     <span className="text-sm text-gray-400">#{i + 1}</span>
                   </div>
                   <p className="text-sm text-gray-300">
-                    Manager: <span className="font-medium">{team.manager}</span>
+                    Manager:{" "}
+                    <span className="font-medium">{team.manager}</span>
                   </p>
                   <p className="text-sm text-gray-300">
                     Rating:{" "}
@@ -144,6 +174,7 @@ export default function Admin() {
           )}
         </div>
 
+        {/* Footer */}
         <p className="text-center text-gray-500 text-sm mt-10">
           Admins can view, seed, and manage all tournament data in real time.
         </p>
