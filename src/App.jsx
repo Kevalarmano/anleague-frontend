@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route, Link, useNavigate } from "react-router-dom";
+import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import { auth, onAuthStateChanged, signOut } from "./firebase";
 import Bracket from "./pages/Bracket.jsx";
 import Admin from "./pages/Admin.jsx";
 import Login from "./pages/Login.jsx";
 import RegisterTeam from "./pages/RegisterTeam.jsx";
 import Analytics from "./pages/Analytics.jsx";
-import HallOfFame from "./pages/HallOfFame.jsx"; // ✅ NEW IMPORT
+import HallOfFame from "./pages/HallOfFame.jsx";
 import { GiSoccerKick } from "react-icons/gi";
 import { FaMoon, FaSun } from "react-icons/fa";
 import clsx from "classnames";
@@ -16,13 +16,13 @@ export default function App() {
   const [theme, setTheme] = useState("dark");
   const navigate = useNavigate();
 
-  // watch for login state
+  // Watch for login state
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub();
   }, []);
 
-  // theme handling
+  // Handle dark/light theme
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
@@ -33,6 +33,13 @@ export default function App() {
     await signOut(auth);
     navigate("/login");
   }
+
+  const linkBase =
+    "px-3 py-1 rounded-md font-medium transition duration-200";
+  const activeLink =
+    "text-yellow-400 border-b-2 border-yellow-400 shadow-yellow-400/50";
+  const inactiveLink =
+    "text-white hover:text-yellow-300 hover:border-yellow-300";
 
   return (
     <div
@@ -53,29 +60,59 @@ export default function App() {
         </div>
 
         <nav className="flex items-center gap-6">
-          <Link className="hover:text-gold transition" to="/">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              `${linkBase} ${isActive ? activeLink : inactiveLink}`
+            }
+          >
             Bracket
-          </Link>
+          </NavLink>
+
           {isAdmin && (
-            <Link className="hover:text-gold transition" to="/admin">
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? activeLink : inactiveLink}`
+              }
+            >
               Admin
-            </Link>
+            </NavLink>
           )}
+
           {isAdmin && (
-            <Link className="hover:text-gold transition" to="/analytics">
+            <NavLink
+              to="/analytics"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? activeLink : inactiveLink}`
+              }
+            >
               Analytics
-            </Link>
+            </NavLink>
           )}
+
           {isAdmin && (
-            <Link className="hover:text-gold transition" to="/halloffame">
+            <NavLink
+              to="/halloffame"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? activeLink : inactiveLink}`
+              }
+            >
               Hall of Fame
-            </Link>
+            </NavLink>
           )}
+
           {user && !isAdmin && (
-            <Link className="hover:text-gold transition" to="/register">
+            <NavLink
+              to="/register"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? activeLink : inactiveLink}`
+              }
+            >
               Register
-            </Link>
+            </NavLink>
           )}
+
           {user ? (
             <button
               onClick={logout}
@@ -84,9 +121,14 @@ export default function App() {
               Logout
             </button>
           ) : (
-            <Link className="text-gold hover:underline" to="/login">
+            <NavLink
+              to="/login"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? activeLink : inactiveLink}`
+              }
+            >
               Login
-            </Link>
+            </NavLink>
           )}
 
           {/* Theme toggle */}
