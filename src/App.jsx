@@ -1,12 +1,17 @@
+// src/App.jsx
 import React, { useEffect, useState } from "react";
 import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import { auth, onAuthStateChanged, signOut } from "./firebase";
+
 import Bracket from "./pages/Bracket.jsx";
 import Admin from "./pages/Admin.jsx";
 import Login from "./pages/Login.jsx";
 import RegisterTeam from "./pages/RegisterTeam.jsx";
 import Analytics from "./pages/Analytics.jsx";
 import HallOfFame from "./pages/HallOfFame.jsx";
+import Match from "./pages/Match.jsx";            
+import TopScorers from "./pages/TopScorers.jsx";
+
 import { GiSoccerKick } from "react-icons/gi";
 import { FaMoon, FaSun } from "react-icons/fa";
 import clsx from "classnames";
@@ -16,13 +21,11 @@ export default function App() {
   const [theme, setTheme] = useState("dark");
   const navigate = useNavigate();
 
-  // Watch for login state
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub();
   }, []);
 
-  // Handle dark/light theme
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
@@ -34,8 +37,7 @@ export default function App() {
     navigate("/login");
   }
 
-  const linkBase =
-    "px-3 py-1 rounded-md font-medium transition duration-200";
+  const linkBase = "px-3 py-1 rounded-md font-medium transition duration-200";
   const activeLink =
     "text-yellow-400 border-b-2 border-yellow-400 shadow-yellow-400/50";
   const inactiveLink =
@@ -67,6 +69,15 @@ export default function App() {
             }
           >
             Bracket
+          </NavLink>
+
+          <NavLink
+            to="/topscorers"           
+            className={({ isActive }) =>
+              `${linkBase} ${isActive ? activeLink : inactiveLink}`
+            }
+          >
+            Top Scorers
           </NavLink>
 
           {isAdmin && (
@@ -150,15 +161,10 @@ export default function App() {
       <main className="p-6 max-w-7xl mx-auto transition">
         <Routes>
           <Route path="/" element={<Bracket />} />
-          <Route
-            path="/admin"
-            element={isAdmin ? <Admin /> : <AccessDenied />}
-          />
-          <Route
-            path="/register"
-            element={user ? <RegisterTeam /> : <AccessDenied />}
-          />
           <Route path="/login" element={<Login />} />
+
+          {/* Admin-only */}
+          <Route path="/admin" element={isAdmin ? <Admin /> : <AccessDenied />} />
           <Route
             path="/analytics"
             element={isAdmin ? <Analytics /> : <AccessDenied />}
@@ -167,6 +173,16 @@ export default function App() {
             path="/halloffame"
             element={isAdmin ? <HallOfFame /> : <AccessDenied />}
           />
+
+          {/* Rep-only */}
+          <Route
+            path="/register"
+            element={user ? <RegisterTeam /> : <AccessDenied />}
+          />
+
+          {/* Public pages */}
+          <Route path="/topscorers" element={<TopScorers />} />
+          <Route path="/match/:stage/:id" element={<Match />} />
         </Routes>
       </main>
 
