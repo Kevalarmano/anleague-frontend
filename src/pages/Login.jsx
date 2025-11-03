@@ -1,3 +1,4 @@
+// src/pages/Login.jsx
 import React, { useState, useEffect } from "react";
 import {
   auth,
@@ -8,7 +9,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,10 +19,8 @@ export default function Login() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser || null);
-      // Optional: redirect admins immediately
-      if (currentUser?.email === "admin@example.com") {
-        navigate("/admin");
-      }
+      if (currentUser?.email === "admin@example.com") navigate("/admin");
+      else if (currentUser?.email === "rep@example.com") navigate("/register");
     });
     return () => unsub();
   }, [navigate]);
@@ -29,33 +28,43 @@ export default function Login() {
   function mapError(err) {
     switch (err.code) {
       case "auth/too-many-requests":
-        return "Too many attempts. Please wait a few minutes and try again.";
+        return "Too many attempts. Please wait and try again.";
       case "auth/user-not-found":
-        return "No account found for that email.";
+        return "User not found. Check your username.";
       case "auth/wrong-password":
-        return "Incorrect password. Please try again.";
-      case "auth/invalid-email":
-        return "Please enter a valid email address.";
+        return "Incorrect password.";
       default:
         return err.message;
     }
   }
 
+  function toEmail(value) {
+    const v = (value || "").trim().toLowerCase();
+    if (v.includes("@")) return v;
+    if (v === "admin") return "admin@example.com";
+    if (v === "rep") return "rep@example.com";
+    return null;
+  }
+
   async function handleLogin(e) {
     e.preventDefault();
-    if (loading) return; // prevent double submit
+    if (loading) return;
     setLoading(true);
     setMsg("");
+
+    const email = toEmail(username);
+    if (!email) {
+      setMsg("Use username 'admin' or 'rep'.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      setEmail("");
+      await signInWithEmailAndPassword(auth, email, password);
+      setUsername("");
       setPassword("");
-      // Navigate after onAuthStateChanged fires. If you want immediate nav:
-      // navigate("/admin");
     } catch (err) {
       setMsg(mapError(err));
-      // small backoff to avoid hammering the endpoint
-      await new Promise((r) => setTimeout(r, 800));
     } finally {
       setLoading(false);
     }
@@ -67,66 +76,75 @@ export default function Login() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-pitch to-green-900">
-      <div className="bg-white text-gray-800 rounded-2xl shadow-lg p-10 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-green-800 mb-6">
+    <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a] text-gray-100">
+      <div className="w-full max-w-md p-8 rounded-2xl border border-green-800/40 bg-white/5 backdrop-blur-md shadow-2xl">
+        <h2 className="text-3xl font-bold text-center text-gold mb-8">
           African Nations League Login
         </h2>
 
         {user ? (
           <div className="text-center">
             <p className="mb-4">
-              Welcome, <span className="font-semibold">{user.email}</span>
+              Logged in as{" "}
+              <span className="font-semibold text-gold">{user.email}</span>
             </p>
             <button
               onClick={handleLogout}
-              className="w-full bg-green-700 text-white py-2 rounded-lg hover:bg-green-800 transition"
+              className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
             >
               Logout
             </button>
           </div>
         ) : (
-          <form onSubmit={handleLogin} noValidate>
-            <div className="mb-4">
-              <label className="block font-medium mb-1">Email</label>
+          <form onSubmit={handleLogin} className="space-y-5" noValidate>
+            <div>
+              <label className="block font-semibold mb-1">Username</label>
               <input
-                type="email"
-                className="border border-gray-300 rounded-lg w-full p-2"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
-                required
-                autoComplete="username"
+                type="text"
+                className="w-full p-2 rounded-lg bg-transparent border border-green-800/40 focus:border-gold focus:outline-none"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
                 disabled={loading}
+                autoComplete="off"
               />
             </div>
-            <div className="mb-6">
-              <label className="block font-medium mb-1">Password</label>
+
+            <div>
+              <label className="block font-semibold mb-1">Password</label>
               <input
                 type="password"
-                className="border border-gray-300 rounded-lg w-full p-2"
+                className="w-full p-2 rounded-lg bg-transparent border border-green-800/40 focus:border-gold focus:outline-none"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
+                placeholder="Enter password"
                 disabled={loading}
+                autoComplete="off"
               />
             </div>
+
             <button
               type="submit"
               disabled={loading}
-              className={`w-full bg-gold text-dark font-semibold py-2 rounded-lg transition ${
-                loading ? "opacity-60 cursor-not-allowed" : "hover:scale-105"
+              className={`w-full py-2 rounded-lg font-semibold transition ${
+                loading
+                  ? "bg-gray-600 cursor-not-allowed"
+                  : "bg-gold text-dark hover:scale-105 hover:shadow-lg hover:shadow-gold/30"
               }`}
             >
               {loading ? "Signing in..." : "Login"}
             </button>
+
+            <p className="text-xs text-gray-400 mt-3 text-center">
+              Use <span className="text-gold font-semibold">admin@example.com</span> /
+              <span className="text-gold font-semibold">rep@example.com</span> as username
+              <br /> Passwords: admin123 / rep123
+            </p>
           </form>
         )}
 
         {msg && (
-          <p className="mt-4 text-center text-red-600 font-medium">{msg}</p>
+          <p className="mt-4 text-center text-red-400 font-medium">{msg}</p>
         )}
       </div>
     </div>
