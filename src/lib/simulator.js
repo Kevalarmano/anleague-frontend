@@ -1,83 +1,151 @@
 // src/lib/simulator.js
 import { db, collection, addDoc } from "../firebase";
 
+/**
+ * Simulate a full tournament from teams[] and persist:
+ * - quarterFinals, semiFinals, final documents
+ * Each match doc contains:
+ *  { teamA, teamB, scoreA, scoreB, winner, scorers: [{team, player, minute}], simulated: true, createdAt }
+ * Returns { winner, runnerUp }
+ */
 export async function simulateTournament(teams) {
   if (!teams || teams.length < 8) throw new Error("Not enough teams to simulate.");
 
-  // Validate all teams
-  const validTeams = teams.filter(
-    (t) => t && t.country && typeof t.rating === "number"
-  );
-  if (validTeams.length < 8)
-    throw new Error("Invalid or incomplete team data in Firestore");
+  // Randomize teams for QF (you can keep your “top 8 by rating” if preferred)
+  const shuffled = [...teams].sort(() => Math.random() - 0.5);
 
-  // Randomize order
-  const shuffled = [...validTeams].sort(() => Math.random() - 0.5);
-
-  // --- Quarter Finals ---
+  // ---------- QUARTER FINALS ----------
   const qfWinners = [];
+  const qfMatches = [];
   for (let i = 0; i < 8; i += 2) {
-    const teamA = shuffled[i];
-    const teamB = shuffled[i + 1];
-    const { winner, scoreA, scoreB } = simulateMatch(teamA, teamB);
-    qfWinners.push({ winner });
-    await addMatch("quarterFinals", teamA, teamB, scoreA, scoreB, winner);
+    const res = playMatch(shuffled[i], shuffled[i + 1]);
+    qfWinners.push(res.winnerTeam);
+    qfMatches.push(res);
+    await writeMatch("quarterFinals", res);
   }
 
-  // --- Semi Finals ---
+  // ---------- SEMI FINALS ----------
   const sfWinners = [];
+  const sfMatches = [];
   for (let i = 0; i < 4; i += 2) {
-    const teamA = qfWinners[i].winner;
-    const teamB = qfWinners[i + 1].winner;
-    if (!teamA || !teamB)
-      throw new Error("Invalid semi-final match setup (missing team).");
-    const { winner, scoreA, scoreB } = simulateMatch(teamA, teamB);
-    sfWinners.push({ winner });
-    await addMatch("semiFinals", teamA, teamB, scoreA, scoreB, winner);
+    const res = playMatch(qfWinners[i], qfWinners[i + 1]);
+    sfWinners.push(res.winnerTeam);
+    sfMatches.push(res);
+    await writeMatch("semiFinals", res);
   }
 
-  // --- Final ---
-  const teamA = sfWinners[0].winner;
-  const teamB = sfWinners[1].winner;
-  if (!teamA || !teamB)
-    throw new Error("Invalid final match setup (missing team).");
-  const { winner, scoreA, scoreB } = simulateMatch(teamA, teamB);
-  const runnerUp = winner === teamA ? teamB : teamA;
+  // ---------- FINAL ----------
+  const finalRes = playMatch(sfWinners[0], sfWinners[1]);
+  await writeMatch("final", finalRes);
 
-  await addMatch("final", teamA, teamB, scoreA, scoreB, winner);
+  const winner = finalRes.winnerTeam;
+  const runnerUp = winner.country === finalRes.teamA.country ? finalRes.teamB : finalRes.teamA;
 
-  // --- Store Champion ---
+  // Optional: persist champions history
   await addDoc(collection(db, "pastWinners"), {
     champion: winner.country,
-    runnerUp: runnerUp.country,
-    rating: winner.rating,
     year: new Date().getFullYear(),
-    createdAt: new Date(),
   });
 
-  // ✅ Return structured result
   return { winner, runnerUp };
 }
 
-function simulateMatch(teamA, teamB) {
-  const scoreA = rand(0, 5);
-  const scoreB = rand(0, 5);
-  const winner = scoreA >= scoreB ? teamA : teamB;
-  return { winner, scoreA, scoreB };
-}
+/**
+ * Simulates a single match: returns an object with scoreline and scorers with minutes.
+ */
+function playMatch(teamA, teamB) {
+  // Bias: higher rating slightly increases expected goals
+  const expA = Math.max(0, (teamA?.rating ?? 70) - 60) / 12; // ~0..3
+  const expB = Math.max(0, (teamB?.rating ?? 70) - 60) / 12;
 
-async function addMatch(stage, teamA, teamB, scoreA, scoreB, winner) {
-  if (!teamA || !teamB || !winner) return;
-  await addDoc(collection(db, stage), {
-    teamA: teamA.country,
-    teamB: teamB.country,
+  const scoreA = poissonClamp(expA);
+  const scoreB = poissonClamp(expB);
+
+  const winnerTeam = scoreA >= scoreB ? teamA : teamB;
+
+  // Build scorer events
+  const scorers = [];
+  const minutesA = uniqueSortedMinutes(scoreA);
+  const minutesB = uniqueSortedMinutes(scoreB);
+
+  for (const m of minutesA) {
+    scorers.push({
+      team: teamA.country,
+      player: pickScorerName(teamA),
+      minute: m,
+    });
+  }
+  for (const m of minutesB) {
+    scorers.push({
+      team: teamB.country,
+      player: pickScorerName(teamB),
+      minute: m,
+    });
+  }
+  // Show chronologically
+  scorers.sort((x, y) => x.minute - y.minute);
+
+  return {
+    teamA,
+    teamB,
     scoreA,
     scoreB,
-    winner: winner.country,
+    winner: winnerTeam.country,
+    winnerTeam,
+    scorers,
+    simulated: true,
     createdAt: new Date(),
+  };
+}
+
+/** Persist one match into the stage collection */
+async function writeMatch(stage, res) {
+  await addDoc(collection(db, stage), {
+    teamA: res.teamA.country,
+    teamB: res.teamB.country,
+    scoreA: res.scoreA,
+    scoreB: res.scoreB,
+    winner: res.winner,
+    scorers: res.scorers, // [{team, player, minute}]
+    simulated: res.simulated,
+    createdAt: res.createdAt,
   });
+}
+
+/** Return N distinct minutes in [1..90], sorted */
+function uniqueSortedMinutes(n) {
+  const s = new Set();
+  while (s.size < n) s.add(rand(1, 90));
+  return [...s].sort((a, b) => a - b);
+}
+
+/** Prefer attackers > mids > defs > keeper for scorer names */
+function pickScorerName(team) {
+  const players = team?.players || [];
+  const AT = players.filter(p => p.position === "AT");
+  const MD = players.filter(p => p.position === "MD");
+  const DF = players.filter(p => p.position === "DF");
+  const GK = players.filter(p => p.position === "GK");
+
+  const bucket =
+    AT.length ? AT :
+    MD.length ? MD :
+    DF.length ? DF : GK;
+
+  if (!bucket.length) return `${team.country} Player`;
+
+  const r = bucket[Math.floor(Math.random() * bucket.length)];
+  return r?.name || `${team.country} Player`;
 }
 
 function rand(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/** Tiny Poisson-ish clamp around expected goals */
+function poissonClamp(lambda) {
+  // simple discretization with clamp 0..5
+  const base = Math.random() < 0.6 ? lambda : lambda + (Math.random() - 0.5);
+  const val = Math.max(0, Math.round(base + Math.random() * 2));
+  return Math.min(val, 5);
 }
