@@ -1,3 +1,4 @@
+// src/pages/Admin.jsx
 import React, { useEffect, useState } from "react";
 import {
   db,
@@ -8,6 +9,7 @@ import {
   addDoc,
   deleteDoc,
 } from "../firebase";
+import { generatePlayers, calculateTeamRating } from "../lib/rating";
 import { simulateTournament } from "../lib/simulator";
 import goalSound from "../assets/goal.mp3";
 import whistleSound from "../assets/whistle.mp3";
@@ -17,6 +19,7 @@ export default function Admin() {
   const [teams, setTeams] = useState([]);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   const goalAudio = new Audio(goalSound);
   const whistleAudio = new Audio(whistleSound);
@@ -33,13 +36,58 @@ export default function Admin() {
     setLoading(false);
   }
 
+  async function backfillPlayers() {
+    try {
+      setBusy(true);
+      setMsg("Backfilling players and ratings...");
+      const snap = await getDocs(collection(db, "teams"));
+      const ops = [];
+
+      snap.forEach((d) => {
+        const t = d.data();
+        const missing =
+          !t.players || !Array.isArray(t.players) || t.players.length === 0;
+        if (missing) {
+          const players = generatePlayers(t.country || "Country");
+          const rating = calculateTeamRating(players);
+          ops.push(
+            setDoc(
+              doc(db, "teams", d.id),
+              { ...t, players, rating },
+              { merge: true }
+            )
+          );
+        }
+      });
+
+      if (ops.length > 0) {
+        await Promise.all(ops);
+        setMsg(
+          `Backfill complete. Updated ${ops.length} team${
+            ops.length > 1 ? "s" : ""
+          }.`
+        );
+      } else {
+        setMsg("All teams already have players and ratings.");
+      }
+      await loadTeams();
+    } catch (err) {
+      console.error(err);
+      setMsg("Backfill failed: " + err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function seedQuarterFinals() {
     if (teams.length < 8) {
       setMsg("You need at least 8 teams to start the tournament.");
       return;
     }
 
-    const sorted = [...teams].sort((a, b) => b.rating - a.rating);
+    const sorted = [...teams].sort(
+      (a, b) => (b.rating || 0) - (a.rating || 0)
+    );
     const pairs = [
       [sorted[0], sorted[7]],
       [sorted[1], sorted[6]],
@@ -61,10 +109,11 @@ export default function Admin() {
         redCardsA: 0,
         redCardsB: 0,
         winner: null,
+        createdAt: new Date().toISOString(),
       });
     }
 
-    setMsg("Quarter-finals seeded successfully!");
+    setMsg("Quarter-finals seeded successfully.");
   }
 
   async function handleSimulate() {
@@ -77,18 +126,18 @@ export default function Admin() {
       whistleAudio.play();
       const result = await simulateTournament(teams);
       goalAudio.play();
-      const winner = result.winner;
-      const runnerUp = result.runnerUp;
 
-      // Save to Hall of Fame
+      const winner = result.winner || result; // support either return shape
+      const runnerUp = result.runnerUp || null;
+
       await addDoc(collection(db, "hallOfFame"), {
         champion: winner.country,
-        runnerUp: runnerUp.country,
+        runnerUp: runnerUp?.country || null,
         rating: winner.rating,
         date: new Date().toISOString(),
       });
 
-      setMsg(`${winner.country} are the new Champions!`);
+      setMsg(`${winner.country} are the new Champions.`);
       launchConfetti();
     } catch (err) {
       console.error(err);
@@ -133,14 +182,14 @@ export default function Admin() {
             Admin Dashboard
           </h2>
           <p className="text-gray-400">
-            Manage teams, seed matches, and monitor tournament progress.
+            Manage teams, seed matches, run simulations, and backfill data.
           </p>
         </div>
 
         {/* Control Panel */}
         <div className="backdrop-blur-md bg-white/5 border border-green-900/50 rounded-2xl shadow-2xl p-6 mb-10 transition-all duration-300 hover:shadow-gold/20">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col md:flex-row flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={seedQuarterFinals}
                 className="bg-gold text-dark font-semibold px-6 py-3 rounded-lg hover:scale-105 hover:shadow-lg hover:shadow-gold/40 transition-all"
@@ -153,6 +202,16 @@ export default function Admin() {
                 className="bg-green-600 text-white font-semibold px-6 py-3 rounded-lg hover:scale-105 hover:shadow-lg hover:shadow-green-400/40 transition-all"
               >
                 Auto Simulate Tournament
+              </button>
+
+              <button
+                onClick={backfillPlayers}
+                disabled={busy}
+                className={`border border-green-700 text-green-700 px-6 py-3 rounded-lg transition ${
+                  busy ? "opacity-60 cursor-not-allowed" : "hover:bg-green-50"
+                }`}
+              >
+                {busy ? "Backfilling..." : "Backfill Players & Ratings"}
               </button>
             </div>
 
@@ -188,13 +247,12 @@ export default function Admin() {
                     <span className="text-sm text-gray-400">#{i + 1}</span>
                   </div>
                   <p className="text-sm text-gray-300">
-                    Manager:{" "}
-                    <span className="font-medium">{team.manager}</span>
+                    Manager: <span className="font-medium">{team.manager}</span>
                   </p>
                   <p className="text-sm text-gray-300">
                     Rating:{" "}
                     <span className="font-semibold text-gold">
-                      {team.rating}
+                      {team.rating ?? "N/A"}
                     </span>
                   </p>
 
