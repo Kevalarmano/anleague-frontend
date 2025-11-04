@@ -96,7 +96,7 @@ Below is the architecture diagram of the system that shows how each component co
 
 ### Diagram Preview
 
-![System Architecture](./dist/assets/system_architecture.png)
+![System Architecture](.src/docs/system_architecture.png)
 
 ---
 
