@@ -1,32 +1,38 @@
-African Nations League – INF4001N Entrance Exam 2026
-1. Overview
+# African Nations League – INF4001N Entrance Exam 2026
 
-The African Nations League web application is a football tournament simulation platform developed for the INF4001N Entrance Exam (2026).
-It allows representatives to register national teams, and administrators to seed matches, auto-simulate tournaments, and manage data.
-All information is stored in Firebase Firestore, with real-time updates and secure authentication.
+## 1. Overview
 
-2. Login Details
-Administrator Account
+The **African Nations League** web app is a football tournament simulation platform developed for the **INF4001N Entrance Exam (2026)**.
+It’s built using **React + Firebase (Auth, Firestore, Hosting)** and lets national representatives register teams while administrators can simulate matches, manage data, and view results.
 
-Email: admin@example.com
+All tournament data is stored in **Firebase Firestore**, with real-time updates and secure authentication.
 
-Password: admin123
+---
 
-Representative Account
+## 2. Login Details
 
-Email: rep@example.com
+### Administrator Account
 
-Password: rep123
+* **Email:** `admin@example.com`
+* **Password:** `admin123`
 
-These accounts are preconfigured for testing and grading.
-The admin has full access to all pages, while the representative can only register and view teams.
+### Representative Account
 
-3. Firebase Configuration
+* **Email:** `rep@example.com`
+* **Password:** `rep123`
 
-Firebase Project: anleague-backend
+> These test accounts are pre-configured for grading.
+> The admin can access all areas, while the representative can only register a team and view results.
 
-To run the app, ensure your src/firebase.js includes your Firebase config:
+---
 
+## 3. Firebase Configuration
+
+**Firebase Project:** `anleague-backend`
+
+Make sure your `src/firebase.js` includes your Firebase config:
+
+```js
 const firebaseConfig = {
   apiKey: "AIzaSyCJPQDx8COLdzKZjvwUj3vPP7qE2XcqbL8",
   authDomain: "anleague-backend.firebaseapp.com",
@@ -35,124 +41,141 @@ const firebaseConfig = {
   messagingSenderId: "866726235387",
   appId: "1:866726235387:web:da094d0a0c5f8fe59cb45e"
 };
+```
 
+Then export Firestore and Auth:
 
-Then export the initialized Firestore and Auth instances:
-
+```js
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+```
 
-4. Installation & Running Locally
-Step 1 — Install dependencies
+---
+
+## 4. Installation & Running Locally
+
+**Step 1 — Install dependencies**
+
+```bash
 npm install
+```
 
-Step 2 — Run the app in development mode
+**Step 2 — Run the app in development mode**
+
+```bash
 npm run dev
+```
 
+Open the local link (e.g. [http://localhost:5173](http://localhost:5173)) in your browser.
 
-The app will start on a local server (e.g. http://localhost:5173)
+**Step 3 — Log in**
+Use either the **admin** or **representative** credentials to test the system.
 
-Open that link in your browser.
+---
 
-Step 3 — Log in
+## 5. Project Features
 
-Use either admin or representative credentials to test the system.
+| Feature                 | Description                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| **Authentication**      | Firebase Auth with secure role-based access (Admin & Rep)                                           |
+| **Database**            | Firestore collections: `teams`, `quarterFinals`, `semiFinals`, `final`, `hallOfFame`, `pastWinners` |
+| **Team Registration**   | Representatives register a new country, manager info, and get random player generation              |
+| **Simulation Engine**   | Auto-simulates the full tournament with goal scoring, match results, and confetti celebration       |
+| **Bracket System**      | Dynamically displays seeded and simulated matches                                                   |
+| **Analytics Dashboard** | Admin dashboard with team performance and historical stats                                          |
+| **Hall of Fame**        | Displays past champions and runners-up                                                              |
+| **Audio & Visuals**     | Goal/whistle sounds + confetti animations                                                           |
+| **Theme Toggle**        | Switch between light and dark modes                                                                 |
+| **Responsive UI**       | Tailwind CSS – works on all screen sizes                                                            |
 
-5. Project Features
-Feature	Description
-Authentication: Firebase Auth with secure admin and rep accounts
-Database: Firestore with collections: teams, quarterFinals, semiFinals, final, hallOfFame, pastWinners
-Team Registration: Representatives register new countries with manager info and random player generation
-Simulation Engine: Auto tournament simulation with goal scoring, winners, and confetti celebration
-Bracket System: Dynamic match display for all seeded and simulated matches
-Analytics Dashboard	Admin view for tracking team performance and historical results
-Hall of Fame: Displays past champions and runners-up
-Sound Effects: Whistle and goal audio for immersion
-Visual Effects: Confetti celebration animation
-Theme Toggle: Light/dark mode switch
-Responsive UI: Mobile-friendly Tailwind CSS design
-6. Deployment
+---
 
-To deploy using Firebase Hosting:
+## 6. System Architecture
 
-Step 1 — Build production bundle
+Below is the architecture diagram of the system that shows how each component connects (frontend, backend, Firebase, and external services).
+
+### Diagram Preview
+
+![System Architecture](./dist/assets/system_architecture.png)
+
+---
+
+## 7. Deployment
+
+**Step 1 — Build the production bundle**
+
+```bash
 npm run build
+```
 
-Step 2 — Initialize Firebase Hosting
+**Step 2 — Initialize Firebase Hosting**
+
+```bash
 firebase login
 firebase init hosting
-# Select your project: anleague-backend
-# Set public directory to "dist"
-# Configure as single-page app: Yes
+# Select project: anleague-backend
+# Public directory: dist
+# Configure as SPA: Yes
+```
 
-Step 3 — Deploy to the web
+**Step 3 — Deploy**
+
+```bash
 firebase deploy --only hosting
+```
 
+Once done, Firebase will give a live URL like:
 
-After deploying, Firebase will display a live URL (e.g., https://anleague-backend.web.app)
-Include this link in your submission.
+```
+https://anleague-backend.web.app
+```
 
-7. Submission Checklist (as per INF4001N brief)
+Include that URL in your submission.
 
- 1. Zip file name:
-INF4001N_StudentNo_ANLeague_2026.zip
+---
 
- 2. Contents inside the zip:
+## 8. Submission Checklist (INF4001N)
 
-All source code files (/src, /public, etc.)
+1. **Zip file name:**
+   `INF4001N_StudentNo_ANLeague_2026.zip`
 
-README.md (this file)
+2. **Include in ZIP:**
 
-.env.example or firebase.js (no secrets)
+   * All source code (`/src`, `/public`, etc.)
+   * `README.md` (this file)
+   * `firebase.js` or `.env.example` (no secrets)
+   * `/dist` (optional)
+   * A small text note with:
 
-Built files (/dist) – optional
+     * Admin login
+     * Rep login
+     * Firebase collaborators
+     * Deployment link
 
-A short text file or note containing:
+3. **Firebase collaborators:**
 
-Admin credentials (admin@example.com
- / admin123)
+   * `ammarcanani@gmail.com`
+   * `elsje.scott@uct.ac.za`
 
-Representative credentials (rep@example.com
- / rep123)
+4. **Deployment URL:**
+   Add your live Firebase Hosting URL here.
 
-Firebase project access given to:
+5. **README:**
+   This document explains how to run and test the app.
 
-ammarcanani@gmail.com
+---
 
-elsje.scott@uct.ac.za
+## 9. Notes for Grading Team
 
-Deployed site URL
+This submission includes all core and bonus features listed in the INF4001N brief:
 
- 3. Database Access:
-Add both required emails (ammarcanani@gmail.com, elsje.scott@uct.ac.za) as project collaborators in Firebase Console.
+* Audio and confetti effects
+* Full tournament auto-simulation
+* Hall of Fame and analytics dashboard
+* Live Firebase backend (Auth + Firestore)
+* Clean React structure using functional components and hooks
+* Responsive Tailwind UI with theme toggle
 
- 4. Deployment URL:
-Include your live Firebase Hosting URL in the submission.
-
- 5. Readme:
-This file explains how to install, run, and test the project.
-
-8. Notes for Grading Team
-
-The app includes all required and bonus features:
-
-Audio effects
-
-Confetti celebrations
-
-Auto-simulation logic
-
-Hall of Fame
-
-Analytics and admin dashboard
-
-Thematic UI
-
-The database and authentication are hosted live on Firebase.
-
-Code follows clean, modular React structure using functional components and modern hooks.
-
-Developed by:
-Keval Armano Ramchander (RMCKEV001)
-INF4001N Entrance Exam 2026 Submission
-© 2025 African Nations League | University of Cape Town
+Developed by **Keval Armano Ramchander (RMCKEV001)**
+INF4001N Entrance Exam 2026 – University of Cape Town
+© 2025 African Nations League Project
